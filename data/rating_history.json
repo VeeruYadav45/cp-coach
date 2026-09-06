@@ -1,0 +1,95 @@
+{
+  "status": "OK",
+  "result": [
+    {
+      "contestId": 2237,
+      "contestName": "Order Capital Round 2 (Codeforces Round 1104, Div. 1 + Div. 2)",
+      "handle": "Yakurto",
+      "rank": 9103,
+      "ratingUpdateTimeSeconds": 1781804100,
+      "oldRating": 0,
+      "newRating": 426
+    },
+    {
+      "contestId": 2241,
+      "contestName": "Codeforces Round 1107 (Div. 3)",
+      "handle": "Yakurto",
+      "rank": 16615,
+      "ratingUpdateTimeSeconds": 1782838200,
+      "oldRating": 426,
+      "newRating": 662
+    },
+    {
+      "contestId": 2242,
+      "contestName": "Educational Codeforces Round 192 (Rated for Div. 2)",
+      "handle": "Yakurto",
+      "rank": 14051,
+      "ratingUpdateTimeSeconds": 1783355700,
+      "oldRating": 662,
+      "newRating": 802
+    },
+    {
+      "contestId": 2246,
+      "contestName": "Codeforces Round 1108 (Div. 2)",
+      "handle": "Yakurto",
+      "rank": 7781,
+      "ratingUpdateTimeSeconds": 1783875000,
+      "oldRating": 802,
+      "newRating": 946
+    },
+    {
+      "contestId": 2244,
+      "contestName": "Codeforces Round 1109 (Div. 3)",
+      "handle": "Yakurto",
+      "rank": 13557,
+      "ratingUpdateTimeSeconds": 1784047800,
+      "oldRating": 946,
+      "newRating": 992
+    },
+    {
+      "contestId": 2245,
+      "contestName": "Spectral::Cup 2026 Round 3 (Codeforces Round 1110, Div. 1 + Div. 2)",
+      "handle": "Yakurto",
+      "rank": 8560,
+      "ratingUpdateTimeSeconds": 1784222100,
+      "oldRating": 992,
+      "newRating": 989
+    },
+    {
+      "contestId": 2247,
+      "contestName": "Codeforces Round 1111 (Div. 2)",
+      "handle": "Yakurto",
+      "rank": 7328,
+      "ratingUpdateTimeSeconds": 1784392500,
+      "oldRating": 989,
+      "newRating": 997
+    },
+    {
+      "contestId": 2254,
+      "contestName": "Codeforces Round 1114 (Div. 3)",
+      "handle": "Yakurto",
+      "rank": 10652,
+      "ratingUpdateTimeSeconds": 1785862200,
+      "oldRating": 997,
+      "newRating": 1013
+    },
+    {
+      "contestId": 2256,
+      "contestName": "Codeforces Round 1116 (Div. 2)",
+      "handle": "Yakurto",
+      "rank": 6643,
+      "ratingUpdateTimeSeconds": 1786295100,
+      "oldRating": 1013,
+      "newRating": 1040
+    },
+    {
+      "contestId": 2259,
+      "contestName": "Codeforces Round 1119 (Div. 3)",
+      "handle": "Yakurto",
+      "rank": 5916,
+      "ratingUpdateTimeSeconds": 1788627600,
+      "oldRating": 1040,
+      "newRating": 1088
+    }
+  ]
+}
