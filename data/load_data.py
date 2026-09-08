@@ -7,7 +7,7 @@ HANDLE = "Yakurto"  # my actual handle(replace with yours)
 conn = psycopg2.connect(
     dbname="cpcoach",
     user="postgres",
-    password="password",  # Replace with your  password
+    password="426812",  # Replace with your  password
     host="localhost",
     port="5432"
 )

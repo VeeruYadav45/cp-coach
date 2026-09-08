@@ -1,0 +1,123 @@
+[33mcommit 3fd6421ade91378de74c8d17ac753fa04291194d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: VeeruYadav45 <tatamiblues@gmail.com>
+Date:   Tue Sep 8 22:14:56 2026 +0530
+
+    load codeforces data into postgres:problems,tags,submission,rating history
+
+[1mdiff --git a/data/load_data.py b/data/load_data.py[m
+[1mnew file mode 100644[m
+[1mindex 0000000..f4efdc7[m
+[1m--- /dev/null[m
+[1m+++ b/data/load_data.py[m
+[36m@@ -0,0 +1,110 @@[m
+[32m+[m[32mimport json[m
+[32m+[m[32mimport psycopg2[m
+[32m+[m[32mfrom datetime import datetime[m
+[32m+[m
+[32m+[m[32mHANDLE = "Yakurto"  # my actual handle(replace with yours)[m
+[32m+[m
+[32m+[m[32mconn = psycopg2.connect([m
+[32m+[m[32m    dbname="cpcoach",[m
+[32m+[m[32m    user="postgres",[m
+[32m+[m[32m    password="password",  # Replace with your  password[m
+[32m+[m[32m    host="localhost",[m
+[32m+[m[32m    port="5432"[m
+[32m+[m[32m)[m
+[32m+[m[32mcur=conn.cursor()[m
+[32m+[m[32m#inserts the handle into user table[m
+[32m+[m[32mcur.execute([m
+[32m+[m[32m    "INSERT INTO users (handle) VALUES (%s) ON CONFLICT (handle) DO NOTHING RETURNING id;",[m
+[32m+[m[32m    (HANDLE,)[m
+[32m+[m[32m)[m
+[32m+[m[32m#fetchone() this grabs the id if insert happened[m[41m [m
+[32m+[m[32mresult = cur.fetchone()[m
+[32m+[m[32mif result:[m
+[32m+[m[32m    user_id = result[0][m
+[32m+[m[32melse:[m
+[32m+[m[32m    cur.execute("SELECT id FROM users WHERE handle = %s;", (HANDLE,))[m
+[32m+[m[32m    user_id = cur.fetchone()[0][m
+[32m+[m
+[32m+[m[32mwith open("submissions.json") as f:[m
+[32m+[m[32m    submissions_data = json.load(f)["result"][m
+[32m+[m
+[32m+[m[32mwith open("rating_history.json") as f:[m
+[32m+[m[32m    rating_data = json.load(f)["result"][m
+[32m+[m
+[32m+[m[32mprint(f"User ID: {user_id}")[m
+[32m+[m[32mprint(f"Loaded {len(submissions_data)} submissions, {len(rating_data)} rating entries from JSON")[m
+[32m+[m[32mfor sub in submissions_data:[m
+[32m+[m[32m    problem = sub["problem"][m
+[32m+[m[32m    contest_id = problem.get("contestId")[m
+[32m+[m[32m    problem_index = problem.get("index")[m
+[32m+[m[32m    name = problem.get("name")[m
+[32m+[m[32m    rating = problem.get("rating")  # may be None if unrated[m
+[32m+[m
+[32m+[m[32m    cur.execute([m
+[32m+[m[32m        """[m
+[32m+[m[32m        INSERT INTO problems (contest_id, problem_index, name, rating)[m
+[32m+[m[32m        VALUES (%s, %s, %s, %s)[m
+[32m+[m[32m        ON CONFLICT (contest_id, problem_index) DO NOTHING[m
+[32m+[m[32m        RETURNING id;[m
+[32m+[m[32m        """,[m
+[32m+[m[32m        (contest_id, problem_index, name, rating)[m
+[32m+[m[32m    )[m
+[32m+[m[32m    result = cur.fetchone()[m
+[32m+[m[32m    if result:[m
+[32m+[m[32m        problem_id = result[0][m
+[32m+[m[32m    else:[m
+[32m+[m[32m        cur.execute([m
+[32m+[m[32m            "SELECT id FROM problems WHERE contest_id = %s AND problem_index = %s;",[m
+[32m+[m[32m            (contest_id, problem_index)[m
+[32m+[m[32m        )[m
+[32m+[m[32m        problem_id = cur.fetchone()[0][m
+[32m+[m[32m    tags = problem.get("tags", [])[m
+[32m+[m[32m    for tag_name in tags:[m
+[32m+[m[32m        cur.execute([m
+[32m+[m[32m            "INSERT INTO tags (name) VALUES (%s) ON CONFLICT (name) DO NOTHING RETURNING id;",[m
+[32m+[m[32m            (tag_name,)[m
+[32m+[m[32m        )[m
+[32m+[m[32m        tag_result = cur.fetchone()[m
+[32m+[m[32m        if tag_result:[m
+[32m+[m[32m            tag_id = tag_result[0][m
+[32m+[m[32m        else:[m
+[32m+[m[32m            cur.execute("SELECT id FROM tags WHERE name = %s;", (tag_name,))[m
+[32m+[m[32m            tag_id = cur.fetchone()[0][m
+[32m+[m
+[32m+[m[32m        cur.execute([m
+[32m+[m[32m            "INSERT INTO problem_tags (problem_id, tag_id) VALUES (%s, %s) ON CONFLICT DO NOTHING;",[m
+[32m+[m[32m            (problem_id, tag_id)[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m    verdict = sub.get("verdict")[m
+[32m+[m[32m    language = sub.get("programmingLanguage")[m
+[32m+[m[32m    creation_time = datetime.fromtimestamp(sub["creationTimeSeconds"])[m
+[32m+[m[32m    sub_contest_id = sub.get("contestId")[m
+[32m+[m
+[32m+[m[32m    cur.execute([m
+[32m+[m[32m        """[m
+[32m+[m[32m        INSERT INTO submissions (user_id, problem_id, verdict, programming_language, creation_time, contest_id)[m
+[32m+[m[32m        VALUES (%s, %s, %s, %s, %s, %s);[m
+[32m+[m[32m        """,[m
+[32m+[m[32m        (user_id, problem_id, verdict, language, creation_time, sub_contest_id)[m
+[32m+[m[32m    )[m
+[32m+[m[32mfor entry in rating_data:[m
+[32m+[m[32m    contest_id = entry.get("contestId")[m
+[32m+[m[32m    contest_name = entry.get("contestName")[m
+[32m+[m[32m    old_rating = entry.get("oldRating")[m
+[32m+[m[32m    new_rating = entry.get("newRating")[m
+[32m+[m[32m    update_time = datetime.fromtimestamp(entry["ratingUpdateTimeSeconds"])[m
+[32m+[m
+[32m+[m[32m    cur.execute([m
+[32m+[m[32m        """[m
+[32m+[m[32m        INSERT INTO rating_history (user_id, contest_id, contest_name, old_rating, new_rating, rating_update_time)[m
+[32m+[m[32m        VALUES (%s, %s, %s, %s, %s, %s);[m
+[32m+[m[32m        """,[m
+[32m+[m[32m        (user_id, contest_id, contest_name, old_rating, new_rating, update_time)[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32mconn.commit()[m
+[32m+[m[32mprint("All data loaded successfully.")[m
+[32m+[m
+[32m+[m[32mcur.close()[m
+[32m+[m[32mconn.close()[m
+\ No newline at end of file[m
