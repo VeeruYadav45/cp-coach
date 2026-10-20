@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 import os
 from dotenv import load_dotenv
+from scorer import compute_skill_scores
 
 load_dotenv()  # reads backend/.env into environment variables
 
@@ -61,3 +62,41 @@ def get_stats(handle: str):
         })
 
     return {"handle": handle, "stats": result}
+
+
+@app.get("/score/{handle}")
+def get_score(handle: str):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            t.name AS tag,
+            COUNT(DISTINCT p.id) AS attempted,
+            COUNT(DISTINCT CASE WHEN s.verdict = 'OK' THEN p.id END) AS solved
+        FROM tags t
+        JOIN problem_tags pt ON pt.tag_id = t.id
+        JOIN problems p ON p.id = pt.problem_id
+        JOIN submissions s ON s.problem_id = p.id
+        JOIN users u ON u.id = s.user_id
+        WHERE u.handle = %s
+        GROUP BY t.name
+        ORDER BY attempted DESC;
+    """, (handle,))
+
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    stats = [
+        {
+            "tag": tag,
+            "attempted": attempted,
+            "solved": solved,
+            "accuracy": round(solved / attempted * 100, 1) if attempted else 0,
+        }
+        for tag, attempted, solved in rows
+    ]
+
+    scored = compute_skill_scores(stats)
+    return {"handle": handle, "scores": scored}
