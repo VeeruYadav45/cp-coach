@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 import os
 from dotenv import load_dotenv
 from scorer import compute_skill_scores
 from recommender import recommend_problems
+from sync_user import sync_codeforces_user
 
 load_dotenv()  # reads backend/.env into environment variables
 
@@ -26,13 +27,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def ensure_user_synced(handle: str, conn):
+    """Checks if the user already has submissions in the DB. If not, auto-syncs from CF."""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(s.id)
+        FROM users u
+        LEFT JOIN submissions s ON s.user_id = u.id
+        WHERE u.handle = %s;
+    """, (handle,))
+    count = cur.fetchone()[0]
+    cur.close()
+
+    if count == 0:
+        print(f"User {handle} not found in DB. Auto-syncing from Codeforces...")
+        success = sync_codeforces_user(handle, conn)
+        if not success:
+            raise HTTPException(status_code=404, detail=f"Codeforces handle '{handle}' not found.")
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
+@app.post("/sync/{handle}")
+def manual_sync(handle: str):
+    conn = get_connection()
+    success = sync_codeforces_user(handle, conn)
+    conn.close()
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Codeforces user '{handle}' not found.")
+    return {"status": "success", "handle": handle}
+
 @app.get("/stats/{handle}")
 def get_stats(handle: str):
     conn = get_connection()
+    ensure_user_synced(handle, conn)
     cur = conn.cursor()
 
     cur.execute("""
@@ -69,6 +98,7 @@ def get_stats(handle: str):
 @app.get("/score/{handle}")
 def get_score(handle: str):
     conn = get_connection()
+    ensure_user_synced(handle, conn)
     cur = conn.cursor()
 
     cur.execute("""
@@ -107,6 +137,7 @@ def get_score(handle: str):
 @app.get("/recommend/{handle}")
 def get_recommendations(handle: str, limit: int = 5):
     conn = get_connection()
+    ensure_user_synced(handle, conn)
     cur = conn.cursor()
 
     # 1. Fetch user's current rating from rating_history
@@ -146,7 +177,6 @@ def get_recommendations(handle: str, limit: int = 5):
         for tag, attempted, solved in stats_rows
     ]
     scored = compute_skill_scores(stats)
-    # Lowest scores are at the end since compute_skill_scores sorts descending
     weak_tags = [item["tag"] for item in scored if item["score"] < 60]
     if not weak_tags and scored:
         weak_tags = [item["tag"] for item in scored[-3:]]
